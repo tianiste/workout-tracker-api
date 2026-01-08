@@ -1,6 +1,7 @@
-CREATE TABLE IF NOT EXIST Users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT
-  name TEXT NOT NULL UNIQUE
-  pass_hash TEXT NOT NULL
-  created_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  pass_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
+

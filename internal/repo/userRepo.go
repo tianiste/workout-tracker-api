@@ -1,6 +1,9 @@
 package repo
 
-import "database/sql"
+import (
+	"database/sql"
+	"workout-tracker/internal/models"
+)
 
 type UserRepo struct {
 	DB *sql.DB
@@ -8,4 +11,20 @@ type UserRepo struct {
 
 func NewUserRepo(db *sql.DB) *UserRepo {
 	return &UserRepo{DB: db}
+}
+
+func (repo *UserRepo) GetUserByName(name string) (models.User, error) {
+	var user models.User
+	if err := repo.DB.QueryRow("SELECT id, name, password_hash FROM users WHERE name = ?", name).Scan(&user.Id, &user.Username, &user.PasswordHash); err != nil {
+		return models.User{}, err
+	}
+	return user, nil
+}
+
+func (repo *UserRepo) InsertUser(name, passwordHash string) (int64, error) {
+	res, err := repo.DB.Exec("INSERT INTO users (name, password_hash), VALUES(?, ?)", name, passwordHash)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
 }

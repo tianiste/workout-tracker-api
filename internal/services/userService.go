@@ -65,7 +65,7 @@ func (service *UserService) createToken(user *models.User) (string, error) {
 	return tokenString, nil
 }
 
-func (service *UserService) verifyToken(tokenString string) (jwt.MapClaims, error) {
+func (service *UserService) VerifyToken(tokenString string) (jwt.MapClaims, error) {
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

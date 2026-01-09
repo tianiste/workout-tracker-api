@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -13,7 +14,7 @@ func InitDB() {
 	log.Println("db opening sqlite database...")
 	var err error
 
-	DB, err = sql.Open("sqlite3", "./app.db")
+	DB, err = sql.Open("sqlite3", "./db/app.db")
 	if err != nil {
 		log.Fatal("db open error:", err)
 	}
@@ -29,4 +30,7 @@ func InitDB() {
 	}
 
 	log.Println("db ready")
+	wd, _ := os.Getwd()
+	log.Println("working directory:", wd)
+
 }

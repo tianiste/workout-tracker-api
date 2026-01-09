@@ -35,6 +35,10 @@ func (service *WorkoutService) GetWorkout(userId, workoutId int64) (models.Worko
 	return service.WorkoutRepo.GetWorkoutById(userId, workoutId)
 }
 
+func (service *WorkoutService) GetWorkoutDetails(userId, workoutId int64) (models.WorkoutWithDetails, error) {
+	return service.WorkoutRepo.GetWorkoutDetails(userId, workoutId)
+}
+
 func (service *WorkoutService) ListWorkouts(userId int64, limit, offset int) ([]models.Workout, error) {
 	if limit <= 0 {
 		limit = 25
@@ -60,7 +64,6 @@ func (service *WorkoutService) DeleteWorkout(userId, workoutId int64) error {
 }
 
 func (service *WorkoutService) AddExerciseToWorkout(userId, workoutId, exerciseId int64, exerciseOrder int, notes *string) (models.WorkoutExercise, error) {
-	// Ownership check
 	if err := service.WorkoutRepo.MustBeWorkoutOwner(userId, workoutId); err != nil {
 		return models.WorkoutExercise{}, err
 	}

@@ -135,3 +135,70 @@ func (repo *WorkoutRepo) MustBeWorkoutOwner(userId, workoutId int64) error {
 	}
 	return nil
 }
+
+func (repo *WorkoutRepo) GetWorkoutDetails(userId, workoutId int64) (models.WorkoutWithDetails, error) {
+	workout, err := repo.GetWorkoutById(userId, workoutId)
+	if err != nil {
+		return models.WorkoutWithDetails{}, err
+	}
+
+	exRows, err := repo.DB.Query(`
+		SELECT id, workout_id, exercise_id, exercise_order, notes
+		FROM workout_exercises
+		WHERE workout_id = ?
+		ORDER BY exercise_order ASC, id ASC
+	`, workoutId)
+	if err != nil {
+		return models.WorkoutWithDetails{}, err
+	}
+	defer exRows.Close()
+
+	var exercises []models.WorkoutExerciseWithSets
+	for exRows.Next() {
+		var we models.WorkoutExercise
+		if err := exRows.Scan(&we.Id, &we.WorkoutId, &we.ExerciseId, &we.ExerciseOrder, &we.Notes); err != nil {
+			return models.WorkoutWithDetails{}, err
+		}
+
+		sets, err := repo.listSetsByWorkoutExerciseId(we.Id)
+		if err != nil {
+			return models.WorkoutWithDetails{}, err
+		}
+
+		exercises = append(exercises, models.WorkoutExerciseWithSets{
+			WorkoutExercise: we,
+			Sets:            sets,
+		})
+	}
+	if err := exRows.Err(); err != nil {
+		return models.WorkoutWithDetails{}, err
+	}
+
+	return models.WorkoutWithDetails{
+		Workout:   workout,
+		Exercises: exercises,
+	}, nil
+}
+
+func (repo *WorkoutRepo) listSetsByWorkoutExerciseId(workoutExerciseId int64) ([]models.Set, error) {
+	rows, err := repo.DB.Query(`
+		SELECT id, workout_exercise_id, set_number, reps, weight
+		FROM sets
+		WHERE workout_exercise_id = ?
+		ORDER BY set_number ASC
+	`, workoutExerciseId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []models.Set
+	for rows.Next() {
+		var s models.Set
+		if err := rows.Scan(&s.Id, &s.WorkoutExerciseId, &s.SetNumber, &s.Reps, &s.Weight); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}

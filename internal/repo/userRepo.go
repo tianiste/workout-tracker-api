@@ -22,7 +22,7 @@ func (repo *UserRepo) GetUserByName(name string) (models.User, error) {
 }
 
 func (repo *UserRepo) InsertUser(name, passwordHash string) (int64, error) {
-	res, err := repo.DB.Exec("INSERT INTO users (name, pass_hash), VALUES(?, ?)", name, passwordHash)
+	res, err := repo.DB.Exec("INSERT INTO users (name, pass_hash) VALUES(?, ?)", name, passwordHash)
 	if err != nil {
 		return 0, err
 	}

@@ -34,3 +34,12 @@ type WorkoutWithDetails struct {
 	Workout
 	Exercises []WorkoutExerciseWithSets `json:"exercises"`
 }
+
+type Exercise struct {
+	Id            int64  `json:"id"`
+	OwnerUserId   *int64 `json:"ownerUserId,omitempty"`
+	Name          string `json:"name"`
+	CategoryId    int64  `json:"categoryId"`
+	MuscleGroupId *int64 `json:"muscleGroupId,omitempty"`
+	CreatedAt     string `json:"createdAt"`
+}

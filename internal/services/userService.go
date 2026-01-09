@@ -18,6 +18,8 @@ import (
 var ErrRequiredFields = errors.New("required fields are empty")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 
+var secretKey = []byte(os.Getenv("JWT_KEY"))
+
 type UserService struct {
 	Repo *repo.UserRepo
 }
@@ -48,8 +50,6 @@ func (service *UserService) comparePasswords(password, hash string) error {
 	return nil
 }
 
-var SecretKey = []byte(os.Getenv("JWT_KEY"))
-
 func (service *UserService) createToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
@@ -58,7 +58,7 @@ func (service *UserService) createToken(user *models.User) (string, error) {
 			"exp":      time.Now().Add(time.Hour * 24).Unix(),
 			"sub":      strconv.FormatInt(user.Id, 10),
 		})
-	tokenString, err := token.SignedString(SecretKey)
+	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		return "", err
 	}
@@ -71,10 +71,10 @@ func (service *UserService) VerifyToken(tokenString string) (jwt.MapClaims, erro
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method")
 		}
-		if len(SecretKey) == 0 {
+		if len(secretKey) == 0 {
 			return nil, fmt.Errorf("jwt secret key is not set")
 		}
-		return SecretKey, nil
+		return secretKey, nil
 	})
 	if err != nil {
 		return nil, err
@@ -104,5 +104,21 @@ func (service *UserService) Login(name, password string) (string, error) { // re
 		return "", err
 	}
 
-	return token, nil // placeholder
+	return token, nil
+}
+
+func (service *UserService) Register(name, password string) (string, error) {
+	if err := service.validateCredentials(name, password); err != nil {
+		return "", err
+	}
+	passwordHash, err := service.hashPassword(password)
+	if err != nil {
+		return "", err
+	}
+	id, err := service.Repo.InsertUser(name, passwordHash)
+	if err != nil {
+		return "", err
+	}
+	return strconv.FormatInt(id, 10), nil
+
 }

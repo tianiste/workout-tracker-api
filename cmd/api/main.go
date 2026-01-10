@@ -32,6 +32,10 @@ func main() {
 	userService := services.NewUserService(userRepo)
 	userHandler := handlers.NewUserHandler(userService)
 
+	exerciseRepo := repo.NewExerciseRepo(db.DB)
+	exerciseService := services.NewExerciseService(exerciseRepo)
+	exerciseHandler := handlers.NewExerciseHandler(exerciseService)
+
 	workoutRepo := repo.NewWorkoutRepo(db.DB)
 	workoutExerciseRepo := repo.NewWorkoutExerciseRepo(db.DB)
 	setRepo := repo.NewSetRepo(db.DB)
@@ -56,6 +60,8 @@ func main() {
 			authorized.GET("/workouts/:id/details", workoutHandler.GetWorkoutDetails)
 			authorized.PUT("/workouts/:id", workoutHandler.UpdateWorkout)
 			authorized.DELETE("/workouts/:id", workoutHandler.DeleteWorkout)
+
+			authorized.GET("/exercises", exerciseHandler.ListAllExercises)
 
 			authorized.POST("/workouts/:id/exercises", workoutHandler.AddExerciseToWorkout)
 			authorized.PUT("/workout-exercises/:id", workoutHandler.UpdateWorkoutExercise)

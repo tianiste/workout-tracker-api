@@ -9,8 +9,8 @@ type ExerciseRepo struct {
 	DB *sql.DB
 }
 
-func NewExerciseRepo(db *sql.DB) *WorkoutExerciseRepo {
-	return &WorkoutExerciseRepo{DB: db}
+func NewExerciseRepo(db *sql.DB) *ExerciseRepo {
+	return &ExerciseRepo{DB: db}
 }
 
 func (repo *ExerciseRepo) ListAllExercises() ([]models.Exercise, error) {

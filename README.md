@@ -27,35 +27,109 @@ go run main.go`
 Authorization: Bearer <token>`
 
 ## Endpoints
-
 ### Health
-GET /api/ping
+GET /api/ping  
+Body: none
 
 ### Authentication (Public)
+
 POST /api/register  
+Body:
+```json
+{
+  "name": "string",
+  "password": "string"
+}
+```
+
 POST /api/login  
+Body:
+```json
+{
+  "name": "string",
+  "password": "string"
+}
+```
 
 ### Workouts (Protected)
+
 POST /api/workouts  
+Body:
+```json
+{
+  "performedAt": "RFC3339 timestamp string",
+  "durationMinutes": 45,
+  "notes": "optional string"
+}
+```
+
 GET /api/workouts  
+
 GET /api/workouts/:id  
+
 GET /api/workouts/:id/details  
+
 PUT /api/workouts/:id  
+Body:
+```json
+{
+  "performedAt": "RFC3339 timestamp string",
+  "durationMinutes": 50,
+  "notes": "optional string"
+}
+```
+
 DELETE /api/workouts/:id  
 
 ### Workout Exercises (Protected)
+
 POST /api/workouts/:id/exercises  
+Body:
+```json
+{
+  "exerciseId": 1,
+  "exerciseOrder": 1,
+  "notes": "optional string"
+}
+```
+
 PUT /api/workout-exercises/:id  
+Body:
+```json
+{
+  "exerciseOrder": 2,
+  "notes": "optional string"
+}
+```
+
 DELETE /api/workout-exercises/:id  
 
 ### Sets (Protected)
+
 POST /api/workout-exercises/:id/sets  
+Body:
+```json
+{
+  "setNumber": 1,
+  "reps": 10,
+  "weight": 60.0
+}
+```
+
 PUT /api/sets/:id  
+Body:
+```json
+{
+  "reps": 12,
+  "weight": 62.5
+}
+```
+
 DELETE /api/sets/:id  
 
 ### Exercises (Protected)
-GET /api/exercises
 
+GET /api/exercises  
 
 ## Todo
 1. Workout scheduling

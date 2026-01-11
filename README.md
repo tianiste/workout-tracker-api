@@ -26,6 +26,9 @@ go run main.go`
 `bash
 Authorization: Bearer <token>`
 
+## Rate Limiting
+Added a rate limiter that limits requests to 5/second
+
 ## Endpoints
 ### Health
 GET /api/ping  

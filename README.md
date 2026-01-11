@@ -135,8 +135,8 @@ DELETE /api/sets/:id
 GET /api/exercises  
 
 ## Todo
-1. [o] Workout scheduling
-2. [o] Report generation
-3. [o] Maybe asymmetric JWT and refresh tokens
+1. Workout scheduling
+2. Report generation
+3. Maybe asymmetric JWT and refresh tokens
 4. [x] Rate limiting
-5. [o] Endpoint for adding custom workouts that are exclusive to the user
+5. Endpoint for adding custom workouts that are exclusive to the user

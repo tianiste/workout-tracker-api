@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
+
+	ratelimit "github.com/JGLTechnologies/gin-rate-limit"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -13,6 +16,14 @@ import (
 	"workout-tracker/internal/repo"
 	"workout-tracker/internal/services"
 )
+
+func keyFunc(c *gin.Context) string {
+	return c.ClientIP()
+}
+
+func errorHandler(c *gin.Context, info ratelimit.Info) {
+	c.String(429, "Too many requests. Try again in "+time.Until(info.ResetTime).String())
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -27,6 +38,15 @@ func main() {
 	}()
 
 	router := gin.Default()
+
+	store := ratelimit.InMemoryStore(&ratelimit.InMemoryOptions{
+		Rate:  time.Second,
+		Limit: 5,
+	})
+	rateLimiter := ratelimit.RateLimiter(store, &ratelimit.Options{
+		ErrorHandler: errorHandler,
+		KeyFunc:      keyFunc,
+	})
 
 	userRepo := repo.NewUserRepo(db.DB)
 	userService := services.NewUserService(userRepo)
@@ -43,7 +63,7 @@ func main() {
 	workoutHandler := handlers.NewWorkoutHandler(workoutService)
 
 	api := router.Group("/api")
-
+	api.Use(rateLimiter)
 	{
 		api.GET("/ping", func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{"message": "pong"})

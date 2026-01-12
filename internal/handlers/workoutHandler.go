@@ -458,3 +458,32 @@ func (h *WorkoutHandler) DeleteSet(ctx *gin.Context) {
 
 	ctx.Status(http.StatusNoContent)
 }
+
+func (h *WorkoutHandler) GetWorkoutReport(ctx *gin.Context) {
+	userId, err := getUserIDFromContext(ctx)
+	if err != nil {
+		log.Printf("[GetWorkoutReport] unauthorized: %v", err)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	workoutId, err := parseIDParam(ctx, "id")
+	if err != nil {
+		log.Printf("[GetWorkoutReport] invalid workout id user=%d: %v", userId, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid workout id"})
+		return
+	}
+
+	report, err := h.Service.GetWorkoutReport(userId, workoutId)
+	if err != nil {
+		log.Printf("[GetWorkoutReport] failed user=%d workout=%d: %v", userId, workoutId, err)
+		if errors.Is(err, repo.ErrNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "workout not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate workout report"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, report)
+}

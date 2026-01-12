@@ -154,3 +154,7 @@ func (service *WorkoutService) DeleteSet(userId int64, setId int64) error {
 
 	return service.SetRepo.Delete(setId)
 }
+
+func (service *WorkoutService) GetWorkoutReport(userId, workoutId int64) (models.WorkoutReport, error) {
+	return service.WorkoutRepo.GetWorkoutReport(userId, workoutId)
+}

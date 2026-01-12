@@ -202,3 +202,65 @@ func (repo *WorkoutRepo) listSetsByWorkoutExerciseId(workoutExerciseId int64) ([
 	}
 	return out, rows.Err()
 }
+
+func (repo *WorkoutRepo) GetWorkoutReport(userId, workoutId int64) (models.WorkoutReport, error) {
+	w, err := repo.GetWorkoutById(userId, workoutId)
+	if err != nil {
+		return models.WorkoutReport{}, err
+	}
+
+	rows, err := repo.DB.Query(`
+		SELECT
+			e.id AS exercise_id,
+			e.name AS exercise_name,
+			COUNT(s.id) AS sets_count,
+			COALESCE(SUM(COALESCE(s.reps, 0)), 0) AS total_reps,
+			MAX(s.weight) AS max_weight,
+			COALESCE(SUM(COALESCE(s.reps, 0) * COALESCE(s.weight, 0)), 0) AS total_volume
+		FROM workout_exercises we
+		JOIN exercises e ON e.id = we.exercise_id
+		LEFT JOIN sets s ON s.workout_exercise_id = we.id
+		WHERE we.workout_id = ?
+		GROUP BY e.id, e.name
+		ORDER BY MIN(we.exercise_order) ASC, e.name ASC
+	`, workoutId)
+	if err != nil {
+		return models.WorkoutReport{}, err
+	}
+	defer rows.Close()
+
+	report := models.WorkoutReport{
+		WorkoutId:       w.Id,
+		UserId:          w.UserId,
+		PerformedAt:     w.PerformedAt,
+		DurationMinutes: w.DurationMinutes,
+		Notes:           w.Notes,
+		CreatedAt:       w.CreatedAt,
+	}
+
+	for rows.Next() {
+		var ex models.WorkoutReportExercise
+		if err := rows.Scan(
+			&ex.ExerciseId,
+			&ex.ExerciseName,
+			&ex.SetsCount,
+			&ex.TotalReps,
+			&ex.MaxWeight,
+			&ex.TotalVolume,
+		); err != nil {
+			return models.WorkoutReport{}, err
+		}
+
+		report.Exercises = append(report.Exercises, ex)
+		report.TotalSets += ex.SetsCount
+		report.TotalReps += ex.TotalReps
+		report.TotalVolume += ex.TotalVolume
+	}
+
+	if err := rows.Err(); err != nil {
+		return models.WorkoutReport{}, err
+	}
+
+	report.TotalExercises = len(report.Exercises)
+	return report, nil
+}

@@ -74,19 +74,21 @@ func main() {
 		authorized := api.Group("/")
 		authorized.Use(middleware.AuthMiddleware(userService))
 		{
+			// workouts
 			authorized.POST("/workouts", workoutHandler.CreateWorkout)
 			authorized.GET("/workouts", workoutHandler.ListWorkouts)
 			authorized.GET("/workouts/:id", workoutHandler.GetWorkout)
 			authorized.GET("/workouts/:id/details", workoutHandler.GetWorkoutDetails)
 			authorized.PUT("/workouts/:id", workoutHandler.UpdateWorkout)
 			authorized.DELETE("/workouts/:id", workoutHandler.DeleteWorkout)
-
+			// misc
+			authorized.GET("/workouts/:id/report", workoutHandler.GetWorkoutReport)
 			authorized.GET("/exercises", exerciseHandler.ListAllExercises)
-
+			// exercises
 			authorized.POST("/workouts/:id/exercises", workoutHandler.AddExerciseToWorkout)
 			authorized.PUT("/workout-exercises/:id", workoutHandler.UpdateWorkoutExercise)
 			authorized.DELETE("/workout-exercises/:id", workoutHandler.DeleteWorkoutExercise)
-
+			//sets
 			authorized.POST("/workout-exercises/:id/sets", workoutHandler.AddSet)
 			authorized.PUT("/sets/:id", workoutHandler.UpdateSet)
 			authorized.DELETE("/sets/:id", workoutHandler.DeleteSet)

@@ -84,6 +84,31 @@ Body:
 
 DELETE /api/workouts/:id  
 
+GET /api/workouts/:id/report
+Sample body```json
+{
+    "workoutId": 1,
+    "userId": 1,
+    "performedAt": "1",
+    "notes": "none",
+    "createdAt": "2026-01-09T03:13:28Z",
+    "totalExercises": 1,
+    "totalSets": 1,
+    "totalReps": 10,
+    "totalVolume": 600,
+    "exercises": [
+        {
+            "exerciseId": 1,
+            "exerciseName": "Bench Press",
+            "setsCount": 1,
+            "totalReps": 10,
+            "maxWeight": 60,
+            "totalVolume": 600
+        }
+    ]
+}
+```
+
 ### Workout Exercises (Protected)
 
 POST /api/workouts/:id/exercises  

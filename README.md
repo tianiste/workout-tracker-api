@@ -167,3 +167,7 @@ GET /api/exercises
 3. Maybe asymmetric JWT and refresh tokens
 4. [x] Rate limiting
 5. Endpoint for adding custom workouts that are exclusive to the user
+
+
+
+[Project idea](https://roadmap.sh/projects/fitness-workout-tracker)

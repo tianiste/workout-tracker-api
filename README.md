@@ -16,14 +16,20 @@ Built with go, gin and sqlite, trying to follow a clean repo -> service -> handl
 
 ## Setup 
 1.
-```json git clone https://github.com/tianiste/workout-tracker-api ```
-2. Create a .env with a 256bit JWT key token
+```json
+ git clone https://github.com/tianiste/workout-tracker-api
+```
+3. Create a .env with a 256bit JWT key token
 
-3. Run the server ```bash
-go run main.go```
+4. Run the server
+```bash
+go run main.go
+```
 
 ## Authentication 
-```bash Authorization: Bearer <token>```
+```bash
+ Authorization: Bearer <token>
+```
 
 ## Rate Limiting
 Added a rate limiter that limits requests to 5/second

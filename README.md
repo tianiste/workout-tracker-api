@@ -85,7 +85,8 @@ Body:
 DELETE /api/workouts/:id  
 
 GET /api/workouts/:id/report
-Sample body
+
+Sample body:
 ```json
 {
     "workoutId": 1,

@@ -163,7 +163,7 @@ GET /api/exercises
 
 ## Todo
 1. Workout scheduling
-2. Report generation
+2. [x] Report generation
 3. Maybe asymmetric JWT and refresh tokens
 4. [x] Rate limiting
 5. Endpoint for adding custom workouts that are exclusive to the user

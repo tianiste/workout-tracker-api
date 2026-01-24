@@ -3,46 +3,95 @@ A rest api for tracking workouts.
 Built with go, gin and sqlite, trying to follow a clean repo -> service -> handler architecture, for maintainability, testing...
 
 ## Features
-- User authentication with JWT (Currently no refresh tokens yet)
-- Create/Update/Delete workouts
+- User authentication with JWT access tokens
+- Refresh token authentication (rotating refresh tokens stored hashed in DB)
+- Create / Update / Delete workouts
 - Attach exercises to workouts
+- Workout reports and statistics
+- Rate limiting (5 requests / second)
+
 
 ## Architecture
 
 - Repo → raw DB access (SQL only)
-- Service → business logic
-- Handler → HTTP / JSON
-- Middleware → auth, rate limiting, etc. (rate limiting not yet implemented)
+- Service → business logic (auth, refresh, rotation)
+- Handler → HTTP / JSON (Gin)
+- Middleware → auth, rate limiting
 
-## Setup 
-1.
-```json
- git clone https://github.com/tianiste/workout-tracker-api
+
+## Setup
+
+1. Clone the repository
+```bash
+git clone https://github.com/tianiste/workout-tracker-api
+cd workout-tracker-api
 ```
-3. Create a .env with a 256bit JWT key token
 
-4. Run the server
+2. Create a `.env` file with a JWT secret key (256-bit recommended)
+```env
+JWT_KEY=your-secret-key
+```
+
+3. Run the server
 ```bash
 go run main.go
 ```
 
-## Authentication 
-```bash
- Authorization: Bearer <token>
+
+## Authentication
+
+### Access Token
+Sent on protected routes using:
+```http
+Authorization: Bearer <access_token>
 ```
 
-## Rate Limiting
-Added a rate limiter that limits requests to 5/second
+- Short-lived (10 minutes)
+- Used for all protected API routes
+
+### Refresh Token
+- Stored in an HttpOnly cookie
+- Rotated on every `/refresh`
+- Stored hashed (SHA-256) in the database
+- Revoked on logout
+
+Cookie settings:
+- `HttpOnly`
+- `SameSite=Lax`
+- `Secure=true` (production)
+- `Path=/`
+
+
+## Authentication Flow
+
+1. Login
+   - Returns access token
+   - Sets refresh token cookie
+
+2. Refresh
+   - Validates refresh token from cookie
+   - Issues new access token
+   - Rotates refresh token
+
+3. Logout
+   - Revokes refresh token in DB
+   - Clears cookie
+
 
 ## Endpoints
+
 ### Health
-GET /api/ping  
-Body: none
+```
+GET /api/ping
+```
+
 
 ### Authentication (Public)
 
-POST /api/register  
-Body:
+#### Register
+```
+POST /api/register
+```
 ```json
 {
   "name": "string",
@@ -50,19 +99,38 @@ Body:
 }
 ```
 
-POST /api/login  
-Body:
+#### Login
+```
+POST /api/login
+```
 ```json
 {
   "name": "string",
   "password": "string"
 }
 ```
+
+#### Refresh
+```
+POST /refresh
+```
+- Uses refresh token cookie
+- Returns new access token
+
+#### Logout
+```
+POST /logout
+```
+- Revokes refresh token
+- Clears cookie
+
 
 ### Workouts (Protected)
 
-POST /api/workouts  
-Body:
+#### Create workout
+```
+POST /api/workouts
+```
 ```json
 {
   "performedAt": "RFC3339 timestamp string",
@@ -71,14 +139,25 @@ Body:
 }
 ```
 
-GET /api/workouts  
+#### Get all workouts
+```
+GET /api/workouts
+```
 
-GET /api/workouts/:id  
+#### Get workout by ID
+```
+GET /api/workouts/:id
+```
 
-GET /api/workouts/:id/details  
+#### Get workout details
+```
+GET /api/workouts/:id/details
+```
 
-PUT /api/workouts/:id  
-Body:
+#### Update workout
+```
+PUT /api/workouts/:id
+```
 ```json
 {
   "performedAt": "RFC3339 timestamp string",
@@ -87,39 +166,47 @@ Body:
 }
 ```
 
-DELETE /api/workouts/:id  
+#### Delete workout
+```
+DELETE /api/workouts/:id
+```
 
+#### Workout report
+```
 GET /api/workouts/:id/report
+```
 
-Sample body:
+Sample response:
 ```json
 {
-    "workoutId": 1,
-    "userId": 1,
-    "performedAt": "1",
-    "notes": "none",
-    "createdAt": "2026-01-09T03:13:28Z",
-    "totalExercises": 1,
-    "totalSets": 1,
-    "totalReps": 10,
-    "totalVolume": 600,
-    "exercises": [
-        {
-            "exerciseId": 1,
-            "exerciseName": "Bench Press",
-            "setsCount": 1,
-            "totalReps": 10,
-            "maxWeight": 60,
-            "totalVolume": 600
-        }
-    ]
+  "workoutId": 1,
+  "userId": 1,
+  "performedAt": "1",
+  "notes": "none",
+  "createdAt": "2026-01-09T03:13:28Z",
+  "totalExercises": 1,
+  "totalSets": 1,
+  "totalReps": 10,
+  "totalVolume": 600,
+  "exercises": [
+    {
+      "exerciseId": 1,
+      "exerciseName": "Bench Press",
+      "setsCount": 1,
+      "totalReps": 10,
+      "maxWeight": 60,
+      "totalVolume": 600
+    }
+  ]
 }
 ```
 
+
 ### Workout Exercises (Protected)
 
-POST /api/workouts/:id/exercises  
-Body:
+```
+POST /api/workouts/:id/exercises
+```
 ```json
 {
   "exerciseId": 1,
@@ -128,8 +215,9 @@ Body:
 }
 ```
 
-PUT /api/workout-exercises/:id  
-Body:
+```
+PUT /api/workout-exercises/:id
+```
 ```json
 {
   "exerciseOrder": 2,
@@ -137,12 +225,16 @@ Body:
 }
 ```
 
-DELETE /api/workout-exercises/:id  
+```
+DELETE /api/workout-exercises/:id
+```
+
 
 ### Sets (Protected)
 
-POST /api/workout-exercises/:id/sets  
-Body:
+```
+POST /api/workout-exercises/:id/sets
+```
 ```json
 {
   "setNumber": 1,
@@ -151,8 +243,9 @@ Body:
 }
 ```
 
-PUT /api/sets/:id  
-Body:
+```
+PUT /api/sets/:id
+```
 ```json
 {
   "reps": 12,
@@ -160,19 +253,25 @@ Body:
 }
 ```
 
-DELETE /api/sets/:id  
+```
+DELETE /api/sets/:id
+```
+
 
 ### Exercises (Protected)
 
-GET /api/exercises  
+```
+GET /api/exercises
+```
+
 
 ## Todo
 1. Workout scheduling
-2. [x] Report generation
-3. Maybe asymmetric JWT and refresh tokens
-4. [x] Rate limiting
-5. Endpoint for adding custom workouts that are exclusive to the user
-
+2. Custom user-specific exercises
+3. Session/device management UI
+4. Token reuse detection alerts
+5. Production Docker setup
 
 
 [Project idea](https://roadmap.sh/projects/fitness-workout-tracker)
+

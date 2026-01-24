@@ -28,9 +28,9 @@ func setRefreshCookie(ctx *gin.Context, rawToken string, expiresAt time.Time) {
 		Name:     "refresh_token",
 		Value:    rawToken,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
-		Path:     "/refresh",
+		Path:     "/",
 		Expires:  expiresAt,
 	}
 	http.SetCookie(ctx.Writer, c)
@@ -41,9 +41,9 @@ func clearRefreshCookie(ctx *gin.Context) {
 		Name:     "refresh_token",
 		Value:    "",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
-		Path:     "/refresh",
+		Path:     "/",
 		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
 	}

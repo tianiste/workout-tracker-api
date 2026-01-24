@@ -1,7 +1,12 @@
 package services
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -135,4 +140,35 @@ func (service *UserService) Register(name, password string) (string, error) {
 	}
 	return strconv.FormatInt(id, 10), nil
 
+}
+func (service *UserService) GenerateRefreshToken() (string, error) {
+	const nBytes = 32
+
+	b := make([]byte, nBytes)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func (service *UserService) HashRefreshToken(refreshToken string) string {
+	sum := sha256.Sum256([]byte(refreshToken))
+	return hex.EncodeToString(sum[:])
+}
+
+func (service *UserService) IssueRefreshToken(ctx context.Context, userID int64) (string, time.Time, error) {
+	rawToken, err := service.GenerateRefreshToken()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	hash := service.HashRefreshToken(rawToken)
+	expiresAt := time.Now().UTC().Add(time.Hour * 24 * 7)
+
+	_, err = service.Repo.InsertRefreshToken(ctx, userID, hash, expiresAt)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	return rawToken, expiresAt, nil
 }

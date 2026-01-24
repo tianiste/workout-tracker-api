@@ -23,6 +23,9 @@ import (
 var ErrRequiredFields = errors.New("required fields are empty")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 
+var ErrMissingRefreshToken = errors.New("missing refresh token")
+var ErrInvalidRefreshToken = errors.New("invalid refresh token")
+
 type UserService struct {
 	Repo *repo.UserRepo
 }
@@ -64,10 +67,10 @@ func (service *UserService) comparePasswords(password, hash string) error {
 func (service *UserService) createToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"username": user.Id,
-			"iat":      time.Now().Unix(),
-			"exp":      time.Now().Add(time.Minute * 10).Unix(),
-			"sub":      strconv.FormatInt(user.Id, 10),
+			"id":  user.Id,
+			"iat": time.Now().Unix(),
+			"exp": time.Now().Add(time.Minute * 10).Unix(),
+			"sub": strconv.FormatInt(user.Id, 10),
 		})
 	secretKey, err := service.getSecretKey()
 	if err != nil {
@@ -104,26 +107,29 @@ func (service *UserService) VerifyToken(tokenString string) (jwt.MapClaims, erro
 	return claims, nil
 }
 
-func (service *UserService) Login(name, password string) (string, error) { // returns jwt as string
+func (service *UserService) Login(ctx context.Context, name, password string) (token string, rawToken string, expiresAt time.Time, err error) { // returns jwt as string
 	if err := service.validateCredentials(name, password); err != nil {
-		return "", err
+		return "", "", time.Time{}, err
 	}
 	user, err := service.Repo.GetUserByName(name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", ErrInvalidCredentials
+			return "", "", time.Time{}, ErrInvalidCredentials
 		}
-		return "", err
+		return "", "", time.Time{}, err
 	}
 	if err := service.comparePasswords(password, user.PasswordHash); err != nil {
-		return "", ErrInvalidCredentials
+		return "", "", time.Time{}, ErrInvalidCredentials
 	}
-	token, err := service.createToken(&user)
+	token, err = service.createToken(&user)
 	if err != nil {
-		return "", err
+		return "", "", time.Time{}, err
 	}
-
-	return token, nil
+	rawToken, expiresAt, err = service.IssueRefreshToken(ctx, user.Id)
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+	return token, rawToken, expiresAt, nil
 }
 
 func (service *UserService) Register(name, password string) (string, error) {
@@ -141,6 +147,73 @@ func (service *UserService) Register(name, password string) (string, error) {
 	return strconv.FormatInt(id, 10), nil
 
 }
+
+func (service *UserService) Logout(ctx context.Context, refreshTokenRaw string) error {
+	if strings.TrimSpace(refreshTokenRaw) == "" {
+		return ErrMissingRefreshToken
+	}
+
+	hash := service.HashRefreshToken(refreshTokenRaw)
+
+	rt, err := service.Repo.GetByHash(ctx, hash)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrInvalidRefreshToken
+		}
+		return err
+	}
+
+	if rt.RevokedAt != nil {
+		return ErrInvalidRefreshToken
+	}
+
+	return service.Repo.Revoke(ctx, rt.Id, time.Now().UTC())
+}
+
+func (service *UserService) Refresh(ctx context.Context, refreshTokenRaw string) (newAccessToken string, newRefreshRaw string, newRefreshExpiresAt time.Time, err error) {
+	if strings.TrimSpace(refreshTokenRaw) == "" {
+		return "", "", time.Time{}, ErrMissingRefreshToken
+	}
+
+	now := time.Now().UTC()
+	hash := service.HashRefreshToken(refreshTokenRaw)
+
+	rt, err := service.Repo.GetByHash(ctx, hash)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", "", time.Time{}, ErrInvalidRefreshToken
+		}
+		return "", "", time.Time{}, err
+	}
+
+	if rt.RevokedAt != nil {
+		return "", "", time.Time{}, ErrInvalidRefreshToken
+	}
+	if !rt.ExpiresAt.After(now) {
+		return "", "", time.Time{}, ErrInvalidRefreshToken
+	}
+
+	u := models.User{Id: rt.UserId}
+	newAccessToken, err = service.createToken(&u)
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+
+	newRefreshRaw, err = service.GenerateRefreshToken()
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+	newHash := service.HashRefreshToken(newRefreshRaw)
+	newRefreshExpiresAt = now.Add(time.Hour * 24 * 7)
+
+	_, err = service.Repo.Rotate(ctx, rt.Id, rt.UserId, newHash, newRefreshExpiresAt, now)
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+
+	return newAccessToken, newRefreshRaw, newRefreshExpiresAt, nil
+}
+
 func (service *UserService) GenerateRefreshToken() (string, error) {
 	const nBytes = 32
 

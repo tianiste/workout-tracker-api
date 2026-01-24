@@ -70,6 +70,8 @@ func main() {
 		})
 		api.POST("/register", userHandler.Register)
 		api.POST("/login", userHandler.Login)
+		api.POST("/refresh", userHandler.Refresh)
+		api.POST("/logout", userHandler.Logout)
 
 		authorized := api.Group("/")
 		authorized.Use(middleware.AuthMiddleware(userService))

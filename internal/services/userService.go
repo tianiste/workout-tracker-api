@@ -59,9 +59,9 @@ func (service *UserService) comparePasswords(password, hash string) error {
 func (service *UserService) createToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"username": user.Username,
+			"username": user.Id,
 			"iat":      time.Now().Unix(),
-			"exp":      time.Now().Add(time.Hour * 24).Unix(),
+			"exp":      time.Now().Add(time.Minute * 10).Unix(),
 			"sub":      strconv.FormatInt(user.Id, 10),
 		})
 	secretKey, err := service.getSecretKey()

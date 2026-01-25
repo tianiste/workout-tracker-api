@@ -1,0 +1,17 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: workout-tracker-api
+    ports:
+      - "8080:8080"
+    environment:
+      JWT_KEY: ${JWT_KEY}
+    volumes:
+      - workout_data:/data
+    restart: unless-stopped
+
+volumes:
+  workout_data:
+

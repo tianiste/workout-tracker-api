@@ -1,0 +1,14 @@
+bin/
+dist/
+*.exe
+*.out
+
+.git
+.gitignore
+
+.DS_Store
+*.swp
+
+db/app.db
+.env
+

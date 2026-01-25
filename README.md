@@ -9,7 +9,14 @@ Built with go, gin and sqlite, trying to follow a clean repo -> service -> handl
 - Attach exercises to workouts
 - Workout reports and statistics
 - Rate limiting (5 requests / second)
+- Docker build 
+    - runs as non root user
+    - sqlite db persists via Docker volume
+    - config with enviorenment variables (no secrets in image)
 
+## Requirements
+- Docker
+- Docker compose
 
 ## Architecture
 
@@ -27,16 +34,23 @@ git clone https://github.com/tianiste/workout-tracker-api
 cd workout-tracker-api
 ```
 
-2. Create a `.env` file with a JWT secret key (256-bit recommended)
+2. Create a `.env` file with a JWT secret key (see `.env.example`)
 ```env
 JWT_KEY=your-secret-key
 ```
 
-3. Run the server
+3. Build and run the container
 ```bash
-go run main.go
+docker compose up --build
 ```
 
+4. Verify the API is running
+```bash
+curl http://localhost:8080/api/ping
+```
+
+## Note
+- for production cookies should be set to 'true' in `userHandler.go` and the API should be served behind HTTPS
 
 ## Authentication
 
